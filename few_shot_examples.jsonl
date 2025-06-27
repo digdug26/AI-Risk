@@ -1,0 +1,8 @@
+{"sentence": "We will eliminate 700 customer-service roles because the new chatbot handles 80% of inquiries.", "company": "", "ai_causal": "yes", "headcount": 700, "job_titles": ["customer-service roles"]}
+{"sentence": "Amazon laid off 150 warehouse workers due to automated sorting systems.", "company": "Amazon", "ai_causal": "yes", "headcount": 150, "job_titles": ["warehouse workers"]}
+{"sentence": "Although we have invested in AI analytics, layoffs are driven by weak consumer demand.", "company": "", "ai_causal": "no", "headcount": null, "job_titles": []}
+{"sentence": "Tesla reduced headcount by terminating employees following budget constraints.", "company": "Tesla", "ai_causal": "no", "headcount": null, "job_titles": []}
+{"sentence": "Microsoft is cutting 25% of its quality assurance team as automated testing tools replace manual processes.", "company": "Microsoft", "ai_causal": "yes", "headcount": null, "job_titles": ["quality assurance team"]}
+{"sentence": "Google froze hiring for software engineers while implementing machine learning recruitment screening.", "company": "Google", "ai_causal": "no", "headcount": null, "job_titles": ["software engineers"]}
+{"sentence": "The bank eliminated 45 loan officers and 30 tellers after deploying AI-powered loan processing and chatbot customer service.", "company": "", "ai_causal": "yes", "headcount": 75, "job_titles": ["loan officers", "tellers"]}
+{"sentence": "Meta announced workforce reductions affecting data entry clerks since automation handles 95% of data processing tasks.", "company": "Meta", "ai_causal": "yes", "headcount": null, "job_titles": ["data entry clerks"]}

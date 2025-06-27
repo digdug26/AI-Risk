@@ -1,0 +1,1 @@
+python validate_return.py '{"company": "Tesla", "ai_causal": "yes", "headcount": 200, "job_titles": ["assembly line workers"]}'

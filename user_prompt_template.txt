@@ -1,0 +1,11 @@
+Extract the required fields from the following sentence.
+
+Sentence: "{{SENTENCE_HERE}}"
+
+Extraction rules:
+1. If the sentence does not specify a number of positions, set "headcount": null.
+2. If AI, automation, robotics, or chatbots are described but **not blamed** for staffing changes, set "ai_causal": "no".
+3. Company names should be written exactly as they appear.
+4. If no job titles are stated, return an empty array [].
+
+Return only the JSON object—do NOT wrap it in markdown, code fences, or add commentary.
