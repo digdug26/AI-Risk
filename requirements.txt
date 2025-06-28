@@ -3,3 +3,4 @@ feedparser==6.0.11
 psycopg2-binary==2.9.9
 ratelimit==2.2.1
 openai==1.14.1
+python-dotenv==1.0.1

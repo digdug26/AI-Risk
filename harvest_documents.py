@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv(".env.local")
+
 import os
 import sys
 import json

@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv(".env.local")
+
 import json
 import os
 import openai
