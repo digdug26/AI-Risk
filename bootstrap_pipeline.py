@@ -1,6 +1,6 @@
 import json
 import os
-import http.client
+import openai
 import time
 import subprocess
 import random
@@ -20,35 +20,26 @@ sentences = [l.strip() for l in open('candidate_sentences.txt','r',encoding='utf
 def make_user_prompt(sentence:str)->str:
     return user_template.replace('{{SENTENCE_HERE}}', sentence)
 
-# 4️⃣ Helper: call Anthropic Claude Sonnet 4.0
+# 4️⃣ Helper: call OpenAI Chat API
 
-def call_claude(system_prompt:str, user_prompt:str)->str:
-    body = {
-        "model":"claude-3-sonnet-20240229",
-        "max_tokens":256,
-        "messages":[
-            {"role":"system","content":system_prompt},
-            *({"role":"user","content":ex['sentence']} for ex in []),  # few-shot not needed here; already in template
-            {"role":"user","content":user_prompt}
+def call_openai(system_prompt: str, user_prompt: str) -> str:
+    openai.api_key = os.environ.get("OPENAI_API_KEY")
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
         ],
-        "temperature":0.0
-    }
-    conn = http.client.HTTPSConnection("api.anthropic.com")
-    headers = {
-        "Content-Type":"application/json",
-        "anthropic-version":"2023-06-01",
-        "x-api-key":os.environ['ANTHROPIC_API_KEY']
-    }
-    conn.request("POST","/v1/messages",json.dumps(body),headers)
-    resp = conn.getresponse()
-    out  = json.loads(resp.read())
-    return out["content"][0]["text"].strip()
+        max_tokens=256,
+        temperature=0.0,
+    )
+    return response.choices[0].message.content.strip()
 
 # 5️⃣ Iterate & validate
 valid_lines, sample_pool = [], []
 for idx,s in enumerate(sentences,1):
     try:
-        gpt_out = call_claude(system_prompt, make_user_prompt(s))
+        gpt_out = call_openai(system_prompt, make_user_prompt(s))
         p = subprocess.run(
             ['python','validate_return.py', gpt_out],
             capture_output=True, text=True

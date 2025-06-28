@@ -1,14 +1,17 @@
-import anthropic
+import openai
+import os
 
-client = anthropic.Anthropic(api_key="your-key")
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Load prompts (same as above)
-message = client.messages.create(
-    model="claude-3-sonnet-20240229",
+response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ],
     max_tokens=500,
     temperature=0.0,
-    system=system_prompt,
-    messages=[{"role": "user", "content": user_prompt}]
 )
 
-result = message.content[0].text
+result = response.choices[0].message.content
