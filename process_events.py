@@ -61,21 +61,23 @@ def filter_sentences(text, nlp):
             yield sent.strip()
 
 
-def call_claude(sentence: str) -> str:
+def call_openai(sentence: str) -> str:
     global _api_calls
-    import anthropic
+    import openai
 
     _api_calls += 1
-    client = anthropic.Anthropic()
+    openai.api_key = os.environ.get("OPENAI_API_KEY")
     user_prompt = USER_TEMPLATE.replace("{{SENTENCE_HERE}}", sentence)
-    msg = client.messages.create(
-        model="claude-3-sonnet-20240229",
+    resp = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
         max_tokens=256,
         temperature=0.0,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_prompt}],
     )
-    return msg.content[0].text.strip()
+    return resp.choices[0].message.content.strip()
 
 
 def validate_json(raw: str):
@@ -195,7 +197,7 @@ def classify_sentence(sentence):
         return label, prob
 
     try:
-        raw = call_claude(sentence)
+        raw = call_openai(sentence)
     except Exception:
         prob = predict_local(sentence)
         label = {
