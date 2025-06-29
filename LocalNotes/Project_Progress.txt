@@ -1,0 +1,74 @@
+PROGRESS
+
+
+
+Below is a checkpoint snapshot of **what’s working today** and **what’s still on the critical-path** before the full “Adoption-Momentum” pipeline can run unattended every day.
+
+---
+
+## ✅ Pieces already in place
+
+| Area                    | Status                                                                                   | Evidence / notes                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Python runtime**      | **Python 3.11.9** installed and selected via `py -3.11`.                                 | `python -V` shows 3.11.9 inside `.venv`.                                                 |
+| **Virtual-env**         | `.venv` created with 3.11, packages installed from `requirements.txt`.                   | `psycopg2-binary 2.9.9`, `requests`, `feedparser`, `ratelimit`, `python-dotenv` present. |
+| **Secrets file**        | `.env.local` created, loaded with `load_dotenv()`; variables resolve in REPL.            | `PG_URI`, `EDGAR_USER_AGENT`, `ANTHROPIC_API_KEY` verified.                              |
+| **PostgreSQL**          | Server 16 running on localhost; user *postgres* works; database **ai\_risk** exists.     | `psql -U postgres -lqt` lists **ai\_risk**.                                              |
+| **Network access**      | Layoffs.fyi JSON, TechCrunch RSS fetches succeed.                                        | Harvester reached both sources before failing on DB insert.                              |
+| **Repository scripts**  | `harvest_documents.py`, `process_events.py`, `compute_ams.py` generated and inside repo. | You successfully invoked `harvest_documents.py --since …`.                               |
+| **Python connectivity** | Test snippet connects and closes to DB ⇒ driver + URI OK.                                | “Connected OK!” printed in REPL.                                                         |
+| **PATH fixes**          | `C:\Program Files\PostgreSQL\16\bin` added to user PATH.                                 | `where psql` & `createdb` work.                                                          |
+
+---
+
+## 🔶 What’s **partially** done but still blocking
+
+| Component                 | Issue                                                                                                                                | Fix tracked                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| **Database schema**       | Tables `news_documents`, `events`, `soc_events` missing → `relation … does not exist` on first insert.                               | **Action**: run `schema.sql` (see SQL block given) via `psql -f schema.sql`.                                               |
+| **EDGAR fetch**           | 403 Forbidden returned. Likely missing *Referer* header or hitting rate cap.                                                         | **Action**: add `Referer: https://www.sec.gov` header **and** wrap EDGAR GETs with `@limits(calls=9, period=1)` decorator. |
+| **Password in URI**       | `%` in password must be URL-encoded (`%25`). Confirmed for `.env.local`, but double-check `setx PG_URI` if you still keep that copy. | Adjusted; verify with `os.environ["PG_URI"]`.                                                                              |
+| **load\_dotenv override** | Earlier user-level `PG_URI` could override file value.                                                                               | Now using fresh terminal or `override=True` if needed.                                                                     |
+
+---
+
+## ⏭️ Remaining tasks to reach MVP
+
+| Priority | Task                           | Details / owner hints                                                                                                                                                 |
+| -------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P1**   | **Apply schema** (one-time)    | `psql %PG_URI% -f schema.sql` (contains CREATE TABLE IF NOT EXISTS).                                                                                                  |
+| **P1**   | **Patch harvester**            | Add missing `Referer` header and rate-limit wrapper; re-run for a small date range.                                                                                   |
+| **P1**   | **Confirm inserts**            | `SELECT COUNT(*) FROM news_documents;` after harvester finishes.                                                                                                      |
+| **P2**   | **Run `process_events.py`**    | Verify -‐since flag parses; expect rows into `events` and `soc_events`.                                                                                               |
+| **P2**   | **Run `compute_ams.py`**       | Creates `ai_adoption_scores` rows + `reports/ams_latest.csv`.                                                                                                         |
+| **P2**   | **Unit smoke tests**           | `pytest tests/` (already scaffolded) to ensure recent env tweaks didn’t break parsing.                                                                                |
+| **P3**   | **Automation / scheduling**    | • Windows Task Scheduler entries or Airflow DAG (file `dags/airflow_ams.py`).<br>• Make sure each scheduled job sets `WORKDIR` to repo root so `.env.local` is found. |
+| **P3**   | **Logging & alerting**         | Add basic `logging.basicConfig()` to each script; send email/Slack on unhandled exceptions.                                                                           |
+| **P3**   | **Backfill historical window** | After pipeline stable, run harvester for 2024-01-01 onward, then re-compute AMS.                                                                                      |
+| **P4**   | **Dashboard / validation**     | Import `reports/ams_latest.csv` into Power BI or Streamlit for quick sanity graphs; compare with manual layoff anecdotes.                                             |
+
+---
+
+## 🚦 Next two concrete commands
+
+1. **Create tables**
+
+```powershell
+psql %PG_URI% -f schema.sql
+```
+
+2. **Retry harvester with patched headers**
+
+```powershell
+python harvest_documents.py --since 2025-06-01
+```
+
+If the console now shows “Inserted X new rows into news\_documents,” you can proceed with the rest of the pipeline.
+
+---
+
+### Final note on Stack Builder
+
+You do **not** need Stack Builder for this workflow. The only optional extension you *might* want later is **pg\_cron** for in-database scheduling, but Task Scheduler / Airflow already covers that need.
+
+Let me know once the schema is loaded and EDGAR headers are patched—then we’ll verify that `process_events.py` and `compute_ams.py` run cleanly.

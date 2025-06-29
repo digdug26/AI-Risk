@@ -1,0 +1,1138 @@
+SECTIONS:
+   OVERALL DIRECTION
+   Developing Catalogue Layoff & Hiring-Freeze Citations
+   FULL WEb SCRAPPING STEPS
+   WEB SCRAPPING STEP 2 DETAIL
+   AI EXPANSION STEPS
+   AI SHRINKAGE STEPS
+   AI ADOPTION TRAJECTORY
+   HARVEST AND ADOPTION
+
+
+
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+
+OVERALL DIRECTION:
+Below is a pragmatic, data-driven roadmap you can follow to build an “AI-risk score” for every 6-digit SOC occupation.  The guiding principle is to ground each step in transparent, reproducible data so auditors (or legislators!) can see exactly how the score was produced.
+
+---
+
+### 1.  Start at the **task** level, not the occupation level
+
+| What you need                                         | Where to get it                                                                                            | Why it matters                                                      |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Task text** (work activities, detailed tasks, GWAs) | O\*NET database release; use the \*\_task.csv tables                                                       | Tasks are the atomic unit you will map to AI capabilities.          |
+| **Task importance & time-share**                      | O*NET Importance and Level scales, or the new “% of time” field the NC O*NET Center began piloting in 2024 | Lets you weight tasks so core duties dominate the occupation score. |
+
+---
+
+### 2.  Measure **technical feasibility** with an embedding match
+
+1. **Create an “AI capability library”.**
+
+   * Start with the prompt suites released by Brynjolfsson-Li (2023) and the updated ILO/ILO-NASK 2025 capability set that covers reasoning, language, vision and multimodal tools. ([ilo.org][1], [ilo.org][2])
+2. **Convert both tasks and capabilities to embeddings** (e.g., text-embedding-3 or Sentence-T5).
+3. **Compute cosine similarity** between every task and every capability. The maximum similarity ≈ “is this task doable by AI today?”
+4. **Scale to 0-100** and weight by task importance to get an occupation-level “Technical Automation Potential” (TAP).
+
+> *Tip:* If you’d rather not train anything yourself, the public “Refined Global Index of Occupational Exposure to GenAI” (ILO, 2025) already delivers a task-weighted score for 4-digit ISCO codes; you can cross-walk those to SOC. ([ilo.org][2])
+
+---
+
+### 3.  Layer in **adoption evidence** so the score isn’t purely theoretical
+
+| Signal                               | Data source & how to operationalize                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Layoff / hiring-freeze citations** | Scrape 10-Ks, earnings-call transcripts, and reputable layoff trackers (e.g., FinalRoundAI Layoff tally, daily news feeds) and run NLP to flag sentences that explicitly attribute staff cuts or non-replacement to AI/automation.  Build a company-by-SOC matrix of “number of mentions” or “headcount affected”. ([finalroundai.com][3], [ft.com][4]) |
+| **Job-posting shrinkage**            | Lightcast or LinkUp job-posting databases: calculate YoY change in postings for each SOC, and isolate firms that simultaneously mention AI tooling in descriptions.                                                                                                                                                                                     |
+| **Capital-investment intensity**     | U.S. Bureau of Economic Analysis “IP products” series + PitchBook deal tags for “AI” to see where money is already flowing.                                                                                                                                                                                                                             |
+| **AI deployment case studies**       | Peer-reviewed field studies (e.g., QJE 2024 call-center RCT) for calibration. ([academic.oup.com][5])                                                                                                                                                                                                                                                   |
+
+Aggregate these signals into an “Adoption Momentum Score” (AMS).  A simple approach is min-max scaling each signal 0-1 and averaging, or you can run principal-component analysis to derive weights empirically.
+
+---
+
+### 4.  Combine the pieces into a **composite AI-Risk Score**
+
+$$
+\text{AI-Risk}_{\text{SOC}} \;=\; \alpha \,\text{TAP} \;+\; (1-\alpha)\,\text{AMS}\times \beta
+$$
+
+* **α** controls how much you trust pure technical feasibility (e.g., α = 0.7).
+* **β**>1 can amplify adoption evidence so a flood of real-world layoffs pushes a SOC into “high risk” even if its TAP is middling.
+
+Calibrate α and β by back-testing: Does the composite predict actual employment declines in occupations already hit by AI (translation, data-entry, basic customer support) over 2019-2024?
+
+---
+
+### 5.  Classify into **risk tiers** for communication
+
+| Composite score | Tier       | Plain-English label     | Recommended policy lens                        |
+| --------------- | ---------- | ----------------------- | ---------------------------------------------- |
+| 0-33            | **Low**    | “Augmentation likely”   | Focus on up-skilling & productivity capture    |
+| 34-66           | **Medium** | “Hybrid transformation” | Support reskilling, standard-setting           |
+| 67-100          | **High**   | “Displacement risk”     | Prioritize safety nets, rapid retraining funds |
+
+---
+
+### 6.  Build a transparent pipeline
+
+1. **Data ingestion & cleaning:** PostgreSQL + dbt for O\*NET and external signals.
+2. **Embedding & similarity:** Python (HuggingFace transformers) on a GPU notebook or Snowflake Cortex.
+3. **Version control:** Store every raw and processed dataset in an S3 bucket with YYYY-MM tags; publish model cards that list α, β, and data vintages.
+4. **Interactive dashboard:** Streamlit or Power BI so policymakers can slice scores by region, wage quantile, demographic makeup, etc.
+
+---
+
+### 7.  Validate & iterate
+
+* **Expert panels** (industry SMEs) to spot false positives/negatives.
+* **Sensitivity checks**: vary α, try alternative similarity models (e.g., OpenAI vs ST5).
+* **Update cadence**: quarterly for AMS (layoff news moves fast), annually for TAP (capability jumps are stepwise).
+
+---
+
+### 8.  Resources & starting points
+
+* **Code examples:** GitHub → felten-etal-gpt-job-exposure; ai-impact-index repo with O\*NET-embedding pipeline.
+* **Papers to replicate or borrow weights from:**
+
+  * Brynjolfsson, Li & Raymond “Generative AI at Work”, 2023 update 2024.
+  * ILO-NASK “Refined Global Index”, 2025. ([ilo.org][1], [ilo.org][2])
+  * Peng et al. “AI Impact Index using USPTO patents”, PNAS 2024. ([pmc.ncbi.nlm.nih.gov][6])
+  * Pew Research Center O\*NET methodology for GenAI exposure. ([pewresearch.org][7])
+
+By modularizing the score this way, you preserve **objectivity** (every component is traceable to a public dataset) while still capturing messy, real-world adoption dynamics that a purely technical measure would miss.
+
+[1]: https://www.ilo.org/publications/generative-ai-and-jobs-refined-global-index-occupational-exposure?utm_source=chatgpt.com "Generative AI and Jobs: A Refined Global Index of Occupational ..."
+[2]: https://www.ilo.org/resource/news/one-four-jobs-risk-being-transformed-genai-new-ilo%E2%80%93nask-global-index-shows?utm_source=chatgpt.com "One in four jobs at risk of being transformed by GenAI, new ILO ..."
+[3]: https://www.finalroundai.com/blog/ai-replacing-jobs-2025?utm_source=chatgpt.com "AI Job Displacement 2025: Which Jobs Are At Risk? - Final Round AI"
+[4]: https://www.ft.com/content/5009fd1e-85db-433f-aa2b-55d9b88b6481?utm_source=chatgpt.com "Disrupted or displaced? How AI is shaking up jobs"
+[5]: https://academic.oup.com/qje/article/140/2/889/7990658?utm_source=chatgpt.com "Generative AI at Work* | The Quarterly Journal of Economics"
+[6]: https://pmc.ncbi.nlm.nih.gov/articles/PMC11421150/?utm_source=chatgpt.com "The potential impact of AI innovations on US occupations - PMC"
+[7]: https://www.pewresearch.org/social-trends/2023/07/26/2023-ai-and-jobs-methodology-for-onet-analysis/?utm_source=chatgpt.com "Methodology for O*NET analysis | Pew Research Center"
+
+
+
+
+
+
+
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+
+Developing Catalogue Layoff & Hiring-Freeze Citations
+
+Below are **three self-contained Codex task prompts** that together implement the entire “Catalogue Layoff & Hiring-Freeze Citations → Adoption-Momentum signal” workflow.
+Copy each block (one at a time) into the Codex terminal or `/codex` chat while the target GitHub repo is connected.
+
+---
+
+## **Codex Prompt #1 – Document-Feed Harvester (`harvest_documents.py`)**
+
+```text
+# OBJECTIVE --------------------------------------------------------------------
+# Build a *continuous* fetcher that pulls raw workforce-news documents into
+# a Postgres table `news_documents` (schema below) **once per run**:
+#   id (SERIAL PK) | source | url | pub_date | raw_text | pulled_at
+#
+# SOURCES (for demo):
+#   1. Layoffs.fyi JSON endpoint
+#   2. SEC EDGAR API (last 3 days of 8-K filings with “Item 2.05”)
+#   3. TechCrunch layoffs RSS feed
+#
+# ENV ASSUMPTIONS:
+#   * env vars: PG_URI, EDGAR_USER_AGENT
+#   * python >=3.10
+#   * allowable pip packages: requests, feedparser, psycopg2-binary, ratelimit
+#
+# DELIVERABLES (write these files in repo root):
+#   harvest_documents.py  – runnable script
+#   requirements.txt      – exact versions pinned
+#   cron_example.txt      – sample cron entry (daily run at 06:30 UTC)
+#
+# IMPLEMENTATION HINTS:
+#   * Use requests + ratelimit to respect EDGAR rate caps (10 req/s).
+#   * De-duplicate by URL before insert (unique index on `url`).
+#   * Log pulls to stdout; exit 0 on success, non-zero on fatal error.
+#   * Include a `--since YYYY-MM-DD` CLI switch for back-fills.
+#
+# START NOW: create the three files, completely filled.
+```
+
+---
+
+## **Codex Prompt #2 – Sentence Classification & SOC Mapping (`process_events.py`)**
+
+```text
+# OBJECTIVE --------------------------------------------------------------------
+# Transform new rows in `news_documents` into an `events` table and a `soc_events`
+# table as described in Steps 2 & 3 of the workflow.
+#
+# INPUT:
+#   * news_documents.raw_text   – unstructured text blobs
+#
+# OUTPUT TABLES (Postgres):
+#   events(event_id SERIAL PK,
+#          company_id INTEGER,
+#          pub_date DATE,
+#          p_ai_causal REAL,
+#          headcount_raw INTEGER,
+#          title_strings TEXT[],
+#          doc_id INTEGER FK)
+#
+#   soc_events(event_id INTEGER FK,
+#              soc CHAR(7),
+#              weighted_headcount REAL,
+#              p_ai_causal REAL)
+#
+# CONSTRAINTS / LIBS:
+#   * Use spaCy (`en_core_web_trf`) for sentence split + NER.
+#   * Re-use validate_return.py + schema/system/user prompts already in repo
+#     to call Anthropic Claude for labeling **only sentences that contain
+#     the keyword cluster {layoff, eliminate, attrition, backfill, automation}**.
+#   * Company-name → company_id lookup helper already exists in utils/company.py
+#   * Title-to-SOC cross-walk is CSV `title_soc_crosswalk.csv` in data/.
+#
+# TASKS:
+#   1. Read each news_documents row not yet processed.
+#   2. Split into sentences; filter by keyword.
+#   3. Call Claude (few-shot prompt in repo) → JSON; skip on validation fail.
+#   4. Extract:
+#        • company   → company_id
+#        • headcount → int|NULL
+#        • titles    → list[str]
+#   5. Map titles → ≤3 SOC codes using TF-IDF similarity (weights sum 1.0).
+#   6. Write rows to events and soc_events (upsert on (event_id, soc)).
+#   7. Commit & log summary (#processed, #AI-causal).
+#
+# DELIVERABLES:
+#   process_events.py
+#   models/bert_ai_causal.pt        (fine-tuned DistilBERT for fallback)
+#   tests/test_process_events.py    (pytest smoke test with 2 dummy docs)
+#
+# Extra: fallback to local BERT if Claude API quota exceeded (env MAX_API_CALLS).
+#
+# BEGIN CODING NOW — create the three files fully implemented & runnable.
+```
+
+---
+
+## **Codex Prompt #3 – Pivot, Scale & Emit AMS (`compute_ams.py`)**
+
+```text
+# OBJECTIVE --------------------------------------------------------------------
+# From `soc_events`, compute the occupation-level Adoption-Momentum Score (AMS)
+# as defined in Steps 4 – 6, and persist to Postgres table `ai_adoption_scores`.
+#
+# FORMULAS:
+#   headcount_adj  = SUM(weighted_headcount * p_ai_causal)
+#   mention_cnt    = COUNT(*)  (ai_causal prob ≥0.7 only)
+#
+#   For each SOC s in trailing 12 mo:
+#       H_s = SUM(headcount_adj)
+#       C_s = COUNT(DISTINCT company_id WHERE mention_cnt>0)
+#       E_s = employment_base[s]          # CSV oes_employment_2024.csv
+#       F_s = firm_base[s]                # CSV qcew_firm_counts.csv
+#
+#       r1 = min(H_s / E_s, 0.10)
+#       r2 = C_s / F_s
+#
+#   Normalise r1, r2 across SOC universe → z-scores 0-1
+#   AMS_raw = 0.5*z1 + 0.5*z2
+#   AMS     = sqrt(AMS_raw)
+#
+# TABLE schema:
+#   ai_adoption_scores(soc CHAR(7) PK,
+#                      run_date DATE,
+#                      r1 REAL, r2 REAL,
+#                      z1 REAL, z2 REAL,
+#                      ams_raw REAL, ams REAL,
+#                      min_r1 REAL, max_r1 REAL,
+#                      min_r2 REAL, max_r2 REAL)
+#
+# DELIVERABLES:
+#   compute_ams.py
+#   dags/airflow_ams.py        – Airflow DAG to run daily @ 08:00 UTC
+#   reports/ams_latest.csv     – one-row-per-SOC export after script runs
+#
+# IMPLEMENTATION NOTES:
+#   * Use pandas + SQLAlchemy.
+#   * Store min_r*, max_r* each run for full reproducibility.
+#   * Log top-10 ↑-AMS movers vs prior run.
+#   * If employment_base or firm_base missing a SOC, skip with warning.
+#
+# SUCCESS CRITERIA:
+#   • Script exits 0 and writes ≥500 SOC rows.
+#   • `ams_latest.csv` appears in repo root.
+#   • DAG imports without lint errors.
+#
+# START BUILDING CODE NOW — generate all three files completely.
+```
+
+---
+
+**How to use them**
+
+1. **Run Prompt #1** to stand up the harvesting script and its cron example.
+2. **Run Prompt #2** to spin up sentence classification, entity extraction, and SOC mapping.
+3. **Run Prompt #3** to pivot, scale, and store the final AMS scores (plus the Airflow DAG).
+
+Execute each prompt in order; commit and push after successful runs to keep the pipeline incremental and auditable.
+
+
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+FULL WEb SCRAPPING STEPS
+
+### A “best-of-both-worlds” **hybrid pipeline**
+
+Leverage GPT to jump-start high-quality labels **once**, then run a lean, private model for day-to-day inference—while still having GPT on standby for anything the local model can’t handle.
+
+---
+
+## 1 End-to-end architecture
+
+```text
+┌────────────┐     ┌──────────┐     ┌─────────────┐
+│  Raw docs  │ →→ │  Split & │ →→ │  Label router │
+│ (news, 10K)│     │  preprocess│   │  (flowchart) │
+└────────────┘     └──────────┘     └─────┬───────┘
+                                           │
+                          ┌─────────────────┼─────────────────┐
+                          │                                 │
+                confidence < τ_low                 confidence > τ_high
+                          │                                 │
+          ┌───────────────▼──────────────┐   ┌───────────────▼──────────────┐
+          │  Local BERT (production)     │   │    GPT-API fallback          │
+          └───────────────┬──────────────┘   └───────────────┬──────────────┘
+                          │                                 │
+                          └──────────┬──────────┬───────────┘
+                                     │
+                               “events” table
+```
+
+* **τ\_low / τ\_high**: low (<0.4) and high (>0.9) confidence thresholds from BERT’s softmax; only the ambiguous middle bucket goes to GPT.
+
+---
+
+## 2 Bootstrapping the labelled corpus with GPT
+
+| Step | What you do                                      | Practical tips                                                                                                                                    |
+| ---- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.1  | **Draft a JSON-structured prompt**               | *System*: “You are an analyst…”  *User*: “Extract {company, ai\_causal (yes/ no), headcount, job\_titles} from each sentence. Return valid JSON.” |
+| 2.2  | **Few-shot examples**                            | 5–8 pairs covering positive, negative, tricky negations (“using AI but hiring more”) and no-headcount cases.                                      |
+| 2.3  | **Stream 3–5 k sentences** through GPT-4(o) mini | Parallelise 40-50 calls/second; store raw completion + model ID for traceability.                                                                 |
+| 2.4  | **Automated sanity checks**                      | • Does JSON parse? • Is *headcount* numeric? • *ai\_causal* ∈ {Y,N}?                                                                              |
+| 2.5  | **Manual audit** of 5–10 % sample                | Fix template drift; score agreement.  You’ll usually find ≥ 93 % precision after one prompt tweak.                                                |
+
+> **Cost rough-cut:** 3 k × 80 tokens ≈ 240 k tokens ⇒ \$12 if using GPT-4o mini (June 2025 pricing).
+
+---
+
+## 3 Fine-tune a small local model
+
+| Item               | Choice / setting                                                              | Rationale                                   |
+| ------------------ | ----------------------------------------------------------------------------- | ------------------------------------------- |
+| **Base**           | `distilbert-base-uncased` (65 M params)                                       | Runs on CPU at \~2 k sentences/sec.         |
+| **Dataset split**  | 70 % train, 15 % val, 15 % test                                               | Hold-out test for realism.                  |
+| **Hyper-params**   | Epochs = 3, LR = 2 e-5, batch = 32                                            | Defaults hit > 90 F1 quickly.               |
+| **Loss**           | Weighted cross-entropy                                                        | Handle label imbalance if \~80 % negatives. |
+| **Eval**           | Precision, recall, F1, AUROC, ECE (calibration)                               | Calibration is key for τ thresholds.        |
+| **Fine-tune head** | Add a 3-way head if you also predict company & titles; otherwise just binary. |                                             |
+
+*Tools:* HuggingFace 🤗 Transformers + `trainer`, or spaCy’s `spacy-transformers` pipeline for one-stop NER+text-cat.
+
+---
+
+## 4 Entity extraction layer
+
+1. **Company name**:
+   *Use spaCy’s `en_core_web_lg` OR fine-tune a small `roberta-base` NER on your labelled spans; both hit \~95 % precision for ORG tags.*
+
+2. **Headcount**:
+   `re.findall(r'\b(\d{1,6})(?:\s|-)?(?:jobs?|roles?|employees?)\b', sent, flags=re.I)`
+   → cast to int.
+
+3. **Job titles**:
+   *Chunk noun phrases, fuzzy-match to a canonical Lightcast title list, then map to SOC.*
+
+**Why keep these local?** They’re deterministic, fast, and easy to audit—GPT adds little value once the pattern is clear.
+
+---
+
+## 5 Active-learning loop (keeps model fresh)
+
+```text
+Daily pipeline
+   ├─ Inference w/ BERT
+   ├─ Collect 0.4 < p < 0.6 cases (highest uncertainty)
+   ├─ Sample 200 sentences
+   ├─ Label via GPT → human quick-check
+   ├─ Append to training set
+   └─ Re-train weekly / monthly
+```
+
+*Results*: You reduce GPT volume to <5 % of total sentences within two months while keeping accuracy > 94 F1.
+
+---
+
+## 6 Routing logic & thresholds
+
+| Metric         | Value               | How to tune                                     |
+| -------------- | ------------------- | ----------------------------------------------- |
+| **τ\_low**     | 0.4                 | Target < 3 % false-negatives on validation set. |
+| **τ\_high**    | 0.9                 | Keeps GPT calls < 10 % of total.                |
+| **Budget cap** | e.g., \$200 / month | Lower τ\_high if cost overruns.                 |
+
+Store the per-sentence `p_ai_causal`.  Down-stream aggregation (company × SOC) still works even when some rows come from GPT.
+
+---
+
+## 7 Privacy & governance
+
+* **Sensitive docs** (e.g., unpublished 8-K) → bypass GPT, force local model only.
+* **Version control** → record `(model_name, model_sha, threshold_set)` in “events” table meta.
+* **Regulators/auditors** → provide frozen BERT weights + label provenance CSV that shows which rows were GPT-assisted.
+
+---
+
+## 8 When to revisit the split
+
+| Trigger                                 | Action                                   |
+| --------------------------------------- | ---------------------------------------- |
+| Novel jargon (“AI agents-in-the-loop…”) | Add 50 GPT-labeled examples, re-tune.    |
+| Model drift > 2 pp F1 on rolling test   | Re-train from scratch with full corpus.  |
+| Spike in GPT fallback volume            | Check τ\_high; investigate domain shift. |
+
+---
+
+### Payoff summary
+
+| Metric                  | Pure GPT | Hybrid (after 6 wks) |
+| ----------------------- | -------- | -------------------- |
+| **Per 100 k sentences** |          |                      |
+| GPT tokens              | 8 M      | 800 k (-90 %)        |
+| Cost (@ \$0.75 / M)     | \$6.00   | \$0.60               |
+| Latency 95-pct          | 1.2 s    | 0.25 s               |
+| F1 score                | 0.95     | 0.94                 |
+
+You end up **nearly GPT-level accuracy** with **an order-of-magnitude lower variable cost**, faster throughput, and a fully auditable local footprint—while always having GPT in reserve for edge cases or rapid re-labelling.
+
+
+
+
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+WEB SCRAPPING STEP 2 DETAIL
+****************************************************************************************************************************************************************************************************************
+
+### Detailed playbook: **Bootstrapping a high-quality labelled corpus with GPT**
+
+*(expands Steps 2.1 – 2.5 of the hybrid pipeline)*
+
+---
+
+#### 2.1 Draft a robust JSON-structured prompt
+
+1. **Define a minimal, rigid schema** – e.g.
+
+   ```json
+   {
+     "company": "string",
+     "ai_causal": "yes|no",
+     "headcount": "integer|null",
+     "job_titles": ["string", ...]
+   }
+   ```
+2. **Write a tight system message**
+
+   > *System*: “You are an analyst. Return **only** valid JSON matching the schema.”
+3. **Add explicit extraction instructions** in the user message:
+
+   * “If the sentence does not mention headcount, set `"headcount": null`.”
+   * “If AI is merely described but **not** blamed for staffing changes, set `"ai_causal":"no"`.”
+4. **Forbid extra keys / comments** – this prevents malformed JSON that breaks your parser.
+5. **Use single-sentence payloads** – pass one sentence per call rather than an entire paragraph; reasoning is easier and token cost stays low.
+
+---
+
+#### 2.2 Curate **few-shot examples** (the secret sauce)
+
+| Coverage target                       | Example you should include                                                                      | Rationale                                   |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **Positive, explicit**                | “We *eliminated 700 customer-service roles* because the new chatbot meets call-volume demand.”  | Canonical “yes + headcount”.                |
+| **Positive, implicit**                | “Automation powered by OpenAI tools means we won’t *back-fill* the 55 roles lost to attrition.” | Tests causal inference w/out “layoff” verb. |
+| **Negative, still mentions AI**       | “Although we invested in AI analytics, *layoffs are due to the macro environment*.”             | Avoid false positives.                      |
+| **No headcount**                      | “AI scheduling eliminates the need for weekend managers.”                                       | Ensure `headcount=null`.                    |
+| **Weird phrasing / plural companies** | “Across our subsidiaries, robotics trimmed roughly *1 % of warehouse labour*.”                  | Checks unit conversions & percentages.      |
+
+*Tips*
+
+* Five to eight examples usually suffice for GPT-4o.
+* Keep each example under \~50 tokens so the context window is mostly free for real data.
+* Alternate answer order (yes/no) to avoid position bias.
+
+---
+
+#### 2.3 Stream thousands of sentences through GPT efficiently
+
+1. **Batching strategy**
+
+   * Assemble a list of 3 000–5 000 candidate sentences (random from 2023–24 docs to capture modern phrasing).
+   * Group 20–30 sentences per HTTP request using the **OpenAI batch-completion endpoint** (or parallel async calls) to maximise throughput.
+2. **Rate limits** – for GPT-4o mini you can sustain ≈2 000 TPS if whitelisted, else \~100 TPS:
+
+   ```python
+   import aiohttp, asyncio, openai
+   semaphore = asyncio.Semaphore(80)    # respect limit
+   ```
+3. **Token budgeting**
+
+   * Average sentence ≈ 20 tokens; prompt + examples ≈ 140 tokens.
+   * One 25-sentence batch ≈ 640 tokens × 1.3 (response) ≈ 900 tokens → \$0.0007 at June-25 prices.
+   * 5 k sentences ≈ \$13 total.
+4. **Capture full metadata** in a staging table:
+   \| doc\_id | sentence | raw\_json | model | usage\_tokens | timestamp |
+
+---
+
+#### 2.4 Automate sanity & quality checks
+
+Write a small validation script (pseudo-Python):
+
+```python
+import json, re
+bad_rows = []
+for row in rows:
+    try:
+        obj = json.loads(row.raw_json)
+    except json.JSONDecodeError:
+        bad_rows.append((row, "json_error")); continue
+
+    if obj['ai_causal'] not in ('yes', 'no'):
+        bad_rows.append((row, "ai_causal_invalid"))
+    if obj['headcount'] is not None and not isinstance(obj['headcount'], int):
+        bad_rows.append((row, "headcount_not_int"))
+    if obj['headcount'] and obj['headcount'] > 200_000:
+        bad_rows.append((row, "headcount_outlier"))
+    if not re.match(r'^[A-Z0-9 .,&-]{2,}$', obj['company']):
+        bad_rows.append((row, "company_suspect"))
+```
+
+* Auto-flag †-rows for manual review or re-prompting.
+* Log validation failure type so you can iterate on prompt wording quickly.
+
+---
+
+#### 2.5 Manual audit of a **5–10 % stratified sample**
+
+1. **Sampling plan**
+
+   * Stratify by `ai_causal` outcome and by confidence proxy if you asked GPT to output one (e.g., “confidence”:0.62).
+   * Pull at least 50 positives and 50 negatives; double if you see systemic errors.
+2. **Annotation tool** – a shared Google Sheet is enough, but Doccano / Prodigy speeds things up. Columns: text · model output · human verdict · notes.
+3. **Calculate quick metrics**
+
+   ```python
+   precision = TP / (TP+FP)
+   recall    = TP / (TP+FN)
+   f1        = 2*precision*recall / (precision+recall)
+   ```
+4. **Iterate**
+
+   * If **FP > 5 %**, add the offending pattern as a new few-shot negative example or tweak instructions.
+   * If **FN > 10 %**, add a positive example with that phrasing.
+   * Re-run only on the failed subset; merge back.
+5. **Freeze the prompt + completions** once you hit ≥ 93 % precision & recall—good enough to fine-tune DistilBERT without over-cleaning.
+
+---
+
+#### End result
+
+* **Clean, traceable CSV/Parquet** of \~5 000 labelled rows (sentence, ai\_causal, headcount, company, titles).
+* Label provenance column (`"source":"gpt_v2025-06-25" | "human"`) so future auditors know exactly where each label came from.
+* Time invested ≈ ½ day; cost ≈ \$15; ready for fine-tuning and active-learning cycles.
+
+
+
+
+
+
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+
+AI EXPANSION STEPS
+Below is a concise playbook for turning your 15-year Lightcast posting archive into a **“Who benefits from AI?” index** that you can layer onto the same SOC table you already use for AI-risk and employment projections.
+
+---
+
+## 1 Define what “benefit” looks like in postings data
+
+| Signal (all 0 – 1 scaled)                                                                                                                                                                           | Why it indicates *complementary* AI adoption                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Demand-Growth Index (DGI)** = YoY % change in total postings for the SOC.                                                                                                                         | If overall demand is *up*, AI is being used to **extend** capacity, not just cut jobs.                          |
+| **AI-Skill Share (AIS)** = share of postings in the SOC that list ≥ 1 AI/ML/LLM skill-ID from Lightcast’s taxonomy (e.g., *ChatGPT*, *UiPath*, *LLM*). ([lightcast.io][1], [docs.lightcast.dev][2]) | High or rising share shows employers want workers who can **use** AI.                                           |
+| **Wage-Premium Ratio (WPR)** = median advertised wage in AI-tagged postings ÷ median wage in non-AI postings (cap at 1.5).                                                                          | A premium suggests productivity gains are being shared with labour.                                             |
+| **New-Role Emergence (NRE)** = ln( # distinct AI-specific job titles this year ).                                                                                                                   | Growth in titles like *Prompt Engineer* or *AI Product Owner* signals net new job creation. ([lightcast.io][3]) |
+
+---
+
+## 2 Calculate each metric
+
+```sql
+-- Example: AI-Skill Share for 43-4051 in 2024
+SELECT
+  SUM(CASE WHEN ai_flag=1 THEN 1 ELSE 0 END)::float /
+  COUNT(*)                       AS ai_skill_share
+FROM postings
+WHERE soc_code='43-4051'
+  AND post_year=2024;
+```
+
+*AI flag  = 1 if `skills` array contains any ID in your AI whitelist or a keyword match.*
+
+Repeat for every SOC and year; then:
+
+1. **Min-max scale** each metric across SOCs (store min & max for reproducibility).
+2. Optionally **smooth** with a two-year rolling mean to dampen volatility.
+
+---
+
+## 3 Assemble a single **AI-Benefit Score**
+
+$$
+\text{Benefit}_s = 0.35\,\text{DGI}_s + 0.35\,\text{AIS}_s +
+                   0.20\,\text{WPR}_s + 0.10\,\text{NRE}_s
+$$
+
+*Weights emphasise demand and skill uptake; tweak after back-testing.*
+
+* **Short-term winners** → use the current year’s Benefit\_s.
+* **Long-term winners** → take a three-year moving average or fit a trend line (β > 0).
+
+---
+
+## 4 Overlay on employment projections
+
+| Scenario                    | Adjustment approach                                                                                                                                                                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Augmentation boost only** | Add + (Benefit\_s × δ) to the baseline CAGR, where δ≈0.015 lifts growth up to 1.5 pp for top-benefit SOCs.                                                                                                                                       |
+| **Risk vs Benefit matrix**  | For each SOC create a 2-axis grid: **Risk Score** (x) vs **Benefit Score** (y).<br> • High-risk / High-benefit → reskill incumbent workers to capture the upside.<br> • Low-risk / High-benefit → expansion occupations (e.g., data scientists). |
+| **Productivity-led upside** | In macro models, allocate ρ × Benefit\_s of displaced labour to *new* AI-intensive SOCs so total employment stays balanced.                                                                                                                      |
+
+---
+
+## 5 Quality checks
+
+| Issue                                               | Fix                                                                       |
+| --------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Hype spikes** (sudden jump in *ChatGPT* postings) | Require ↑ to persist ≥ 6 months before counting toward Benefit\_s.        |
+| **Outlier wages**                                   | Winsorise advertised salaries at 5th–95th percentiles per SOC.            |
+| **Industry dominance**                              | Weight firm contributions by √(postings) so mega-tech doesn’t drown SMEs. |
+
+---
+
+### Why Lightcast is uniquely suited
+
+* **Granularity & history** – 200 M+ postings tagged to SOC and skills let you watch AI diffusion from 2010 to 2024.
+* **Skills taxonomy updates monthly** – new AI skills are captured as soon as they appear in ads. ([lightcast.io][4])
+* **Advertised wage field** – makes wage-premium analysis possible without external sources.
+
+By measuring *positive* demand-side signals alongside your displacement metrics, you give policymakers a balanced, evidence-backed view of how AI is reshaping each occupation—highlighting not only where to cushion shocks but also where to invest in **upskilling for growth**.
+
+[1]: https://lightcast.io/open-skills/skills/ES2BB25DB544B26CD7AA/chatgpt?utm_source=chatgpt.com "ChatGPT | Lightcast Skills Taxonomy"
+[2]: https://docs.lightcast.dev/updates/skills-taxonomy-changelog?utm_source=chatgpt.com "Skills Taxonomy Changelog - Lightcast API"
+[3]: https://lightcast.io/resources/webinars/2023-talent-playbook-webinar?utm_source=chatgpt.com "2023 Global Talent Playbook Webinar - Lightcast"
+[4]: https://lightcast.io/products/data/our-taxonomies?utm_source=chatgpt.com "Lightcast Taxonomies - Skills, Occupations, Titles"
+
+
+
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+
+AI SHRINKAGE STEPS
+
+
+
+### Elaborating the **“Job-posting shrinkage” adoption-evidence signal**
+
+Below is a step-by-step recipe that turns 15 years of Lightcast (or LinkUp) postings into a **0 – 1 adoption-momentum feature** you can blend into the composite AI-Risk Score.
+
+---
+
+## 1 Prep the raw postings
+
+| Action                   | Practical details                                                                                                                                                       | Why it matters                              |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **Deduplicate**          | Lightcast already removes \~80 % of duplicates during ingest, but still keep only one row per `posting_id` and drop reposts older than 121 days. ([kb.lightcast.io][1]) | Stable YoY counts.                          |
+| **Map to SOC**           | Lightcast’s `soc_code` field is pre-populated; if missing, fall back to the title-to-SOC cross-walk you use elsewhere.                                                  | Aligns postings with your projection table. |
+| **Stamp a calendar key** | `post_year = YEAR(first_posted_date)`; optionally create a rolling 12-month key (`post_YoY = YEARMTH - 12`) to smooth seasonality.                                      | Enables YoY math.                           |
+
+---
+
+## 2 Flag postings that **reference AI tooling**
+
+1. **Skill-taxonomy filter**
+   *Build a white-list of skill\_ids that represent GenAI, classic ML, or RPA (e.g., “ChatGPT”, “LLM”, “UiPath”).* Check each posting’s `skills` array—if any match, set `ai_flag = 1`.
+
+2. **Keyword fallback** (for LinkUp or pre-2017 postings lacking skill tags)
+   Regex on `posting_body` for phrases like `\bAI[- ]?powered\b`, `\bchatbot\b`, `\bmachine learning\b`.
+
+3. **Result**: every posting now has `ai_flag ∈ {0,1}`.
+
+> *Lightcast’s enrichment step already extracts \~13 skills per posting, so the skill-array approach is fast.* ([kb.lightcast.io][1])
+
+---
+
+## 3 Build **company × SOC × year cubes**
+
+```sql
+SELECT
+  company_id,
+  soc_code,
+  post_year,
+  COUNT(*)                             AS postings,
+  SUM(ai_flag)::float / COUNT(*)       AS ai_share
+FROM clean_postings
+GROUP BY 1,2,3;
+```
+
+---
+
+## 4 Compute **YoY shrinkage** for every company–SOC pair
+
+```sql
+WITH cte AS (
+  SELECT
+    p.*,
+    LAG(postings) OVER (PARTITION BY company_id, soc_code ORDER BY post_year) AS prev_postings
+  FROM company_soc_year p
+)
+SELECT
+  company_id, soc_code, post_year,
+  CASE WHEN prev_postings > 10          -- avoid tiny denominators
+       THEN (postings - prev_postings)::float / prev_postings
+       ELSE NULL END                    AS yoy_delta,
+  ai_share
+FROM cte;
+```
+
+*Missing values (`NULL`) mean brand-new or too small to evaluate.*
+
+---
+
+## 5 Identify **“AI-linked shrink events”**
+
+Define a binary flag:
+
+```sql
+shrink_event = (yoy_delta <= -0.15)            -- ≥ 15 % drop
+               AND (ai_share  >= 0.10);        -- ≥ 10 % of postings mention AI
+```
+
+*Tune −15 % and 10 % thresholds in back-testing.*
+
+For richer detail keep a **severity score** per event:
+
+$$
+\text{severity} = (-\text{yoy_delta}) \times \text{ai_share}
+$$
+
+*(e.g., −40 % YoY and 30 % AI share ⇒ 0.12).*
+
+---
+
+## 6 Aggregate to the SOC level
+
+For each SOC *s* and calendar year *t*:
+
+| Symbol           | Formula                                               | Meaning                                            |
+| ---------------- | ----------------------------------------------------- | -------------------------------------------------- |
+| **$L_{s,t}$**    | Σ severity of all shrink events in SOC *s* during *t* | AI-associated postings lost                        |
+| **$B_{s,t-1}$**  | Total postings in SOC *s* in the **prior** year       | Normalization base                                 |
+| **Shrink ratio** | $r_{s,t} = \min(L_{s,t} / B_{s,t-1},\: 0.20)$         | Cap at 20 % so one mega-firm can’t swamp the index |
+
+---
+
+## 7 Rescale 0 → 1 across all SOCs and years
+
+```text
+shrink_scaled_s = (r_s  –  min_r) / (max_r – min_r)
+```
+
+Store `min_r` and `max_r` with the refresh date so the scale is reproducible.
+
+---
+
+## 8 Plug into the **Adoption-Momentum Score (AMS)**
+
+If the shrink metric is one of several AMS ingredients:
+
+$$
+\text{AMS}_s = w_{\text{layoff}}\,z_{\text{layoff},s}
+               + w_{\text{shrink}}\,\text{shrink_scaled}_s
+               + w_{\text{investment}}\,z_{\text{capex},s}
+$$
+
+Typical weights: 0.3 / 0.4 / 0.3.  Adjust after validating against BLS employment changes.
+
+---
+
+### Implementation tips & quality checks
+
+| Possible pitfall                                     | Mitigation                                                                      |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Macro recessions** drive shrinkage unrelated to AI | Compute *relative* shrink: $r_{s,t} - \text{median}_\text{allSOC,t}$.           |
+| **Hiring-freeze vs posting-freeze lag**              | Lag shrink metric 6 months before feeding the projection model.                 |
+| **Small-n noise**                                    | Require ≥ 100 postings in baseline year or pool two-year windows.               |
+| **Employer concentration**                           | Weight each company’s severity by √(prev\_postings) so Amazon doesn’t dominate. |
+
+---
+
+### Why this qualifies as **adoption evidence**
+
+* A posting **withdrawal** is an *observable* staffing choice, not just talk.
+* Linking the drop to **AI language inside the firm’s own ads** ties causality to technology adoption.
+* The per-SOC cap & macro adjustment ensure the metric remains a *broad industry signal*, not a single-event spike.
+
+Blend this scaled shrinkage signal with your other adoption measures (AI-attributed layoffs, cap-ex on automation, etc.) and you now have a multi-sourced, empirically grounded AMS component that updates as new postings flow in each month. ([kb.lightcast.io][1], [linkup.com][2])
+
+[1]: https://kb.lightcast.io/en/articles/6957446-job-posting-analytics-jpa-methodology "Job Posting Analytics (JPA) Methodology | Lightcast Knowledge Base"
+[2]: https://www.linkup.com/use-cases/correlation-between-linkup-data-and-the-bls-reports?utm_source=chatgpt.com "Correlation Between LinkUp Data and the BLS Reports"
+
+
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+AI ADOPTION TRAJECTORY
+
+### A step-by-step recipe for estimating an **AI-adoption trajectory A<sub>t</sub>**
+
+---
+
+#### 1. Choose a *measurable* adoption proxy
+
+Pick one time-series that you can observe at least annually:
+
+* **Organisation-level take-up** (e.g., share of firms that say they “regularly use Gen-AI” from McKinsey or IBM surveys).
+* **Task-level penetration** (share of AI-performable tasks in Lightcast postings).
+* **Capital expenditure on AI** (share of total IT cap-ex tagged “AI”).
+
+Whichever proxy you choose will become your dependent variable *P(t)*. Current surveys put enterprise-level Gen-AI use in the 40-65 % range in early-2025, giving a solid anchor for *P(2025)*. ([mckinsey.com][1], [newsroom.ibm.com][2])
+
+---
+
+#### 2. Set the ceiling **L**
+
+Not every task will *ever* be automated.  Define a long-run upper bound:
+
+* **L = 1** (100 %) if you’re modelling *technical feasibility* only.
+* **L ≈ 0.80–0.90** if you want to allow for regulation, social acceptability, or safety constraints.
+
+---
+
+#### 3. Pick the functional form
+
+The **logistic curve** is the workhorse because it fits most historical tech diffusions and only needs two free parameters:
+
+$$
+A_t = \frac{L}{1+\exp\!\bigl[-k\,(t-t_{50})\bigr]}
+$$
+
+* **k** – speed of diffusion (steeper S when k is larger).
+* **t<sub>50</sub>** – calendar year the proxy crosses 50 % of its ceiling.
+
+People sometimes swap in a **Gompertz** curve (left-skewed S) or a **Bass** model (separate “innovation” *p* and “imitation” *q*) if they want asymmetry, but the estimation steps below are the same. ([oms-inet.files.svdcdn.com][3], [geeksforgeeks.org][4])
+
+---
+
+#### 4. Estimate **k** and **t<sub>50</sub>** from data
+
+1. **Collect the time-series**: at least six annual points improves stability.
+2. **Transform** the logistic into a straight line:
+
+   $$
+   \ln\!\Bigl[\tfrac{A_t}{L-A_t}\Bigr] = k\,(t-t_{50})
+   $$
+
+   With *L* fixed, run an **ordinary-least-squares** regression of the log-odds on *t*.
+3. **Recover parameters**: the slope = *k*; the point where the fitted line crosses zero gives *t<sub>50</sub>*.
+
+This “log-odds OLS” trick is standard in tech-diffusion studies because it avoids non-linear optimisation & handles missing early-stage data gracefully. ([cmegroup.com][5])
+
+*Typical benchmarks*
+
+| Technology                         | k (annual)                          |
+| ---------------------------------- | ----------------------------------- |
+| Electricity (1900s US)             | \~0.10                              |
+| PCs (1990s)                        | \~0.30                              |
+| Smartphones (2007-14)              | \~0.45                              |
+| **Generative-AI (early estimate)** | 0.35–0.60 (fits 2023→2024 doubling) |
+
+These anchors help if your empirical series is still short. ([oms-inet.files.svdcdn.com][3])
+
+---
+
+#### 5. Turn parameters into **scenario families**
+
+Because nobody knows the future speed exactly, define three trajectories:
+
+| Scenario     | k    | t<sub>50</sub> | Interpretation                             |
+| ------------ | ---- | -------------- | ------------------------------------------ |
+| **Slow**     | 0.25 | 2034           | Regulatory drag / data-access bottlenecks  |
+| **Baseline** | 0.40 | 2030           | Mirrors average cloud-SaaS diffusion       |
+| **Fast**     | 0.60 | 2028           | Post-GPT-5 breakthrough, low marginal cost |
+
+Keep *L* constant across scenarios to focus on timing.
+
+---
+
+#### 6. Refine at the **occupation or task** level
+
+1. **Start value A<sub>s,2025</sub>**: use occupation-specific adoption evidence (AI-skill share, postings shrinkage, RPA installs).
+2. **Speed-adjust k<sub>s</sub>**:
+
+   * High-benefit SOCs (software, data science) → multiply baseline *k* by 1.2.
+   * High-risk but low-benefit SOCs (data entry) → keep baseline *k*.
+   * Low-tech sectors (construction) → 0.8 × baseline *k*.
+3. **Ceiling L<sub>s</sub>**: cap at 0.6–0.7 for highly regulated professional roles (medicine, law).
+
+---
+
+#### 7. Validate & update
+
+| Check                 | Method                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| **Back-test**         | Does A<sub>t</sub> fitted on 2010-22 predict 2023-24 survey points?                    |
+| **Cross-tech sanity** | Are *k* and *t<sub>50</sub>* within plausible bounds vs past ICT waves?                |
+| **Expert panel**      | Ask domain SMEs to flag unrealistically early or late cross-overs.                     |
+| **Quarterly refresh** | Re-estimate using fresh survey & postings data; adjust only if parameters move > 10 %. |
+
+---
+
+#### 8. Plug into job projections
+
+For each SOC *s* and future year *t*:
+
+$$
+\text{Adjusted growth}_{s,t} = g^{\text{base}}_{s} - A_{s,t}\times\text{Risk}_{s}
+$$
+
+Where *Risk<sub>s</sub>* is your technical-feasibility score from O\*NET embeddings. Iterate simulations under Slow / Baseline / Fast trajectories to bound the forecast range.
+
+---
+
+### Why this methodology is robust
+
+* **Data-anchored** – starts from observed adoption (65 % of firms already trialling Gen-AI in 2024). ([mckinsey.com][1], [mckinsey.com][6])
+* **Transparent maths** – a two-parameter logistic, easily audited.
+* **Scenario-ready** – k and t<sub>50</sub> give intuitive levers for policymakers.
+* **Extensible** – swap in Bass or Gompertz if you later need asymmetry; re-estimate quarterly as the evidence base grows.
+
+Use this framework once, and updating future vintages of your AI-adjusted employment projections becomes a four-line batch job instead of a research project.
+
+[1]: https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai-2024?utm_source=chatgpt.com "The state of AI in early 2024: Gen AI adoption spikes and ... - McKinsey"
+[2]: https://newsroom.ibm.com/2024-01-10-Data-Suggests-Growth-in-Enterprise-Adoption-of-AI-is-Due-to-Widespread-Deployment-by-Early-Adopters?utm_source=chatgpt.com "Data Suggests Growth in Enterprise Adoption of AI is Due to ..."
+[3]: https://oms-inet.files.svdcdn.com/production/files/Technological_progress_at_national_level_INET_Oxford_WP_2025-01-compressed.pdf?dm=1737388251&utm_source=chatgpt.com "[PDF] Increasing diffusion speeds with ever-changing leaders and followers"
+[4]: https://www.geeksforgeeks.org/bass-diffusion-model/?utm_source=chatgpt.com "Bass Diffusion Model - GeeksforGeeks"
+[5]: https://www.cmegroup.com/company/files/stokey-technology-diffusion-red-2021.pdf?utm_source=chatgpt.com "[PDF] Technology diffusion - CME Group"
+[6]: https://www.mckinsey.com/featured-insights/sustainable-inclusive-growth/charts/gen-ai-casts-a-wider-net?utm_source=chatgpt.com "Gen AI casts a wider net | McKinsey & Company"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+****************************************************************************************************************************************************************************************************************
+
+HARVEST AND ADOPTION
+
+### Deep-dive: “Catalogue Layoff & Hiring-Freeze Citations” → From raw text to a 0-1 **Adoption-Momentum signal**
+
+Below is an end-to-end, reproducible workflow that takes unstructured layoff / hiring-freeze news and turns it into the numeric vector you will feed into the Adoption-Momentum Score (AMS).  I break it into six sub-steps so you can swap components without rewriting the whole pipeline.
+
+---
+
+## 1.  Harvest a **continuous feed** of AI-attributed workforce news   *(“document layer”)*
+
+| Source family                                            | How to ingest                               | Pros                                                    | Cons                                                                      |
+| -------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Layoff trackers** (Layoffs.fyi, TrueUp, FinalRound AI) | Daily JSON scrape / RSS pull                | Already structured: company, date, headcount            | Often missing *reason* detail ([layoffs.fyi][1], [finalroundai.com][2])   |
+| **Regulatory filings** (10-K/10-Q, 8-K, DEF 14A)         | SEC EDGAR API + company CIK list            | Authoritative head-count numbers; searchable            | AI reason buried in text ([msspalert.com][3])                             |
+| **Earnings-call transcripts & press releases**           | FactSet, LSEG/Refinitiv, Seeking Alpha APIs | Rich causal language (“we will not backfill due to AI”) | Subscription cost; noisy ([insight.factset.com][4], [foxbusiness.com][5]) |
+| **Mainstream & trade news**                              | GDELT, Bloomberg, TechCrunch crawler        | Captures “quiet hiring freezes”                         | Needs heavy de-duplication ([techcrunch.com][6])                          |
+
+**Store** every raw doc, its URL, and its publication date in a “news\_documents” table.  Append daily; never overwrite.
+
+---
+
+## 2.  **Classify sentences** that explicitly blame AI or automation
+
+1. **Sentence split** with spaCy.
+
+2. **Binary classifier** (`ai_causal = True/False`).
+
+   * Fine-tune a small-footprint BERT on \~2 000 manually-labeled sentences (positive: “We are reducing 700 customer-service roles as the chatbot scales”; negative: “Layoffs due to macro headwinds”).
+   * Output **confidence p**.
+
+3. **Entity extraction** in the same sentence/paragraph:
+
+   * **Company name** (NER) ➜ join to your firm master table.
+   * **Headcount** (regex for “\d{1,6}” + {jobs, employees, roles}).
+   * **Job titles / job families** (NER + chunking).
+
+Result → an “events” table:
+
+\| event\_id | company\_id | pub\_date | p\_ai\_causal | headcount\_raw | title\_strings | doc\_id |
+
+---
+
+## 3.  **Map job titles → 6-digit SOC codes**
+
+* Use the BLS/Lightcast **title-to-SOC cross-walk** (handles synonyms, plurals).
+* If a sentence has **no explicit title**, default to the company’s top-5 SOCs in the OES employer microdata (≈ industry-weighted assumption).
+* For ambiguous matches, keep the three best SOCs and apportions headcount equally.
+
+```python
+title      = "customer service agent"
+soc_list   = crosswalk.lookup(title)      # returns ['43-4051', '43-4041']
+weights    = [0.6, 0.4]                   # from TF-IDF similarity
+```
+
+Store result in **“soc\_events”**: every row is (event\_id, SOC, weighted\_headcount, p\_ai\_causal).
+
+---
+
+## 4.  Pivot to a **company × SOC matrix** (within a time window)
+
+Let *T* be the analysis window (e.g., trailing 12 months).
+
+```sql
+SELECT
+    company_id,
+    soc,
+    SUM(weighted_headcount * p_ai_causal)   AS headcount_adj,
+    COUNT(*)                                AS mention_cnt
+FROM soc_events
+WHERE pub_date BETWEEN CURRENT_DATE - INTERVAL '12 months' AND CURRENT_DATE
+GROUP BY company_id, soc;
+```
+
+* **`headcount_adj`** ≈ expected number of AI-causal jobs affected.
+* **`mention_cnt`** = how many discrete AI-causal statements involved that SOC.
+
+---
+
+## 5.  Collapse to a **SOC-level adoption metric**
+
+For each SOC *s*:
+
+| Symbol                    | Formula                                       | Interpretation             |   |                                      |
+| ------------------------- | --------------------------------------------- | -------------------------- | - | ------------------------------------ |
+| **$H_s$**                 | $\displaystyle \sum_{c} headcount\_adj_{c,s}$ | AI-linked job losses       |   |                                      |
+| **$C_s$**                 | ( \displaystyle                               | {c: mention\_cnt\_{c,s}>0} | ) | # unique firms citing AI in that SOC |
+| **Employment base** $E_s$ | Latest BLS OES employment for that SOC        | Scaling denominator        |   |                                      |
+
+1. **Headcount ratio**: $r^{(1)}_s = \min\!\left(\dfrac{H_s}{E_s},\;0.10\right)$
+   *cap at 10 % so one mega-layoff doesn’t swamp others.*
+
+2. **Firm-penetration ratio**: $r^{(2)}_s = \dfrac{C_s}{F_s}$
+   where $F_s$ = total U.S. firms employing ≥ 50 workers in SOC *s* (QCEW).
+
+3. **Recency decay** (optional): multiply each event by $e^{-\,\lambda \Delta t}$ before summing, e.g. λ = ln 2 / 180 days (half-life 6 months).
+
+---
+
+## 6.  **Rescale 0 → 1** and deliver the Adoption-Momentum signal
+
+```text
+For each metric k ∈ {1,2}:
+    z_s^(k) = (r_s^(k) − min_k) / (max_k − min_k)        # min-max across all SOCs
+AMS_raw_s  = w1·z_s^(1) + w2·z_s^(2)                     # e.g., w1 = w2 = 0.5
+AMS_s      = sqrt(AMS_raw_s)                             # slight convexity: big moves pop
+```
+
+* **Min-max** keeps the scale intuitive (highest-pressure SOC = 1).
+* Taking √ dampens noise at the low end.
+* **Store** the `min_k` and `max_k` values with a date stamp so the score is fully reproducible later.
+
+---
+
+### Worked micro-example (trailing 12 m):
+
+| SOC                     | $H_s$  | $E_s$     | $C_s$ | $F_s$ | $r^{(1)}_s$ | $r^{(2)}_s$ |
+| ----------------------- | ------ | --------- | ----- | ----- | ----------- | ----------- |
+| 43-4051 (CSRs)          | 8 200  | 1 902 000 | 9     | 950   | 0.0043      | 0.0095      |
+| 15-1256 (Software Devs) | 12 500 | 1 590 000 | 14    | 1 750 | 0.0079      | 0.0080      |
+
+Assume across all SOCs $r^{(1)}$ ranges 0 → 0.009, $r^{(2)}$ 0 → 0.013.
+
+* CSRs: `z¹=0.48`, `z²=0.73` ⇒ AMS\_raw ≈ 0.605 ⇒ AMS ≈ 0.78
+* Software Devs: `z¹=0.88`, `z²=0.62` ⇒ AMS\_raw ≈ 0.75  ⇒ AMS ≈ 0.87
+
+Both land in “high adoption momentum,” with devs slightly hotter because of headcount volume.
+
+---
+
+## 7.  Quality controls & tuning knobs
+
+| Issue                                                    | Control                                                                                     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **False positives (“AI” mentioned only as future plan)** | Threshold `p_ai_causal ≥ 0.7`; manually review top-10 largest events weekly                 |
+| **One-off mega events (e.g., IBM 8 000 roles)**          | 10 % cap in $r^{(1)}_s$ or use winsorized headcount                                         |
+| **Industry concentration bias**                          | Optionally weight each company by its national market share so FAANG doesn’t drown out SMEs |
+| **Multi-SOC layoffs with vague titles**                  | Distribute headcount across SOCs using the company’s existing occupation mix in QCEW        |
+
+---
+
+### Why this yields an **objective, audit-ready** number
+
+* **Every transformation is logged** (raw doc → sentence → event → SOC matrix → AMS).
+* **Confidence weighting** (p\_ai\_causal) makes the score probabilistic, not binary.
+* **Public cross-walks & BLS denominators** prevent arbitrary “hand tweaking.”
+* **Min-max params are versioned**, so the 2025-Q2 score is always reproducible even after the scale re-expands next year.
+
+Using this pipeline, the AMS side of your composite AI-Risk Score captures **who is already acting** on AI—not just who *could* act—while keeping the derivation transparent enough for external review. ([layoffs.fyi][1], [businessinsider.com][7], [msspalert.com][3], [investmentnews.com][8], [foxbusiness.com][5])
+
+[1]: https://layoffs.fyi/?utm_source=chatgpt.com "Layoffs.fyi - Tech Layoff Tracker and DOGE Layoff Tracker"
+[2]: https://www.finalroundai.com/blog/ai-replacing-jobs-2025?utm_source=chatgpt.com "AI Job Displacement 2025: Which Jobs Are At Risk? - Final Round AI"
+[3]: https://www.msspalert.com/news/crowdstrike-cutting-5oo-jobs-as-ai-streamlines-business?utm_source=chatgpt.com "CrowdStrike Layoffs: 500 Jobs Cut as Company Shifts to AI ..."
+[4]: https://insight.factset.com/more-than-40-of-sp-500-companies-cited-ai-on-earnings-calls-for-q2?utm_source=chatgpt.com "Than 40% of S&P 500 Companies Cited “AI” on Earnings Calls for Q2"
+[5]: https://www.foxbusiness.com/technology/cisco-ups-other-companies-adjust-workforce-embrace-ai-report?utm_source=chatgpt.com "UPS, Cisco, and other companies are using AI to adjust their workforce"
+[6]: https://techcrunch.com/2025/05/21/tech-layoffs-2025-list/?utm_source=chatgpt.com "A comprehensive list of 2025 tech layoffs | TechCrunch"
+[7]: https://www.businessinsider.com/klarna-ceo-chatbot-answers-questions-about-ai-2025-6?utm_source=chatgpt.com "I called Klarna's new AI doppelganger of its CEO. Here's what it said about why humans are necessary at work."
+[8]: https://www.investmentnews.com/ria-news/morgan-stanley-to-cut-2000-jobs-as-ai-reshapes-wall-street/259766?utm_source=chatgpt.com "Morgan Stanley to cut 2000 jobs as AI reshapes Wall Street"
+
+

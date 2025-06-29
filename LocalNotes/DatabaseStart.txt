@@ -1,0 +1,17 @@
+# 1. Open NEW terminal so old PG_URI isn't in memory
+cd C:\Users\kdoug\prompt_engineering\AI-Risk
+setx PG_URI "postgresql://postgres:Zorroloves100%25me@localhost:5432/ai_risk"
+
+# close this window, open another new one
+.\.venv\Scripts\activate
+python
+>>> import os, psycopg2
+>>> from dotenv import load_dotenv
+>>> load_dotenv(".env.local")       # override=False is fine now
+True
+>>> os.environ["PG_URI"]
+'postgresql://postgres:Zorroloves100%25me@localhost:5432/ai_risk'
+>>> psycopg2.connect(os.environ["PG_URI"]).close()
+>>> print("Connected OK!")
+Connected OK!
+>>> exit()
