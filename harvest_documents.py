@@ -6,6 +6,7 @@ import sys
 import json
 import argparse
 from datetime import datetime, timedelta
+import time
 
 import requests
 import feedparser
@@ -29,7 +30,16 @@ def edgar_request(method: str, url: str, **kwargs):
     if not ua:
         raise RuntimeError("EDGAR_USER_AGENT env var required")
     headers.setdefault("User-Agent", ua)
-    return requests.request(method, url, headers=headers, **kwargs)
+    headers.setdefault("Referer", "https://www.sec.gov")
+    headers.setdefault("Accept", "application/json, text/plain, */*")
+    headers.setdefault("Accept-Language", "en-US,en;q=0.9")
+
+    while True:
+        resp = requests.request(method, url, headers=headers, **kwargs)
+        if resp.status_code != 403:
+            return resp
+        print("EDGAR 403 received; backing off 60s", file=sys.stderr)
+        time.sleep(60)
 
 
 def parse_date(dt_str: str) -> datetime:
