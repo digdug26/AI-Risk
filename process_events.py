@@ -288,9 +288,9 @@ def main(argv=None):
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT doc_id, raw_text, pub_date
+        SELECT id AS doc_id, raw_text, pub_date
         FROM news_documents n
-        WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.doc_id = n.doc_id)
+        WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.doc_id = n.id)
         """
     )
     docs = cur.fetchall()
