@@ -18,7 +18,8 @@ EDGAR_SEARCH_URL = "https://efts.sec.gov/LATEST/search-index"
 LAYOFFS_URL = "https://layoffs.fyi/wp-json/wp/v2/posts?per_page=100"
 TECHCRUNCH_FEED = "https://techcrunch.com/tag/layoffs/feed/"
 
-RATE = 10
+# SEC guidance allows 10 requests per second max; stay safely below the cap
+RATE = 9
 PER_SECOND = 1
 
 

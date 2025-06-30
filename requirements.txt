@@ -5,3 +5,4 @@ ratelimit==2.2.1
 openai==1.14.1
 python-dotenv==1.0.1
 pandas==2.2.2
+SQLAlchemy==2.0.30
